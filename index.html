@@ -1,831 +1,117 @@
 <!DOCTYPE html>
-<html lang="cs">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<html>
+  <head>
+    <meta charset="utf-8" />
     <title>AR Galerie</title>
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
     <script src="https://cdn.rawgit.com/jeromeetienne/AR.js/master/aframe/build/aframe-ar.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #000;
-            overflow: hidden;
-            height: 100vh;
-            -webkit-user-select: none;
-            user-select: none;
-        }
-
-        /* Welcome Screen */
-        .welcome-screen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100vh;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 2000;
-            color: white;
-            text-align: center;
-            padding: 20px;
-            transition: opacity 0.5s ease, transform 0.5s ease;
-        }
-
-        .welcome-screen.hidden {
-            opacity: 0;
-            transform: translateY(-100%);
-            pointer-events: none;
-        }
-
-        .app-icon {
-            font-size: 4rem;
-            margin-bottom: 20px;
-            animation: float 3s ease-in-out infinite;
-        }
-
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
-        }
-
-        .welcome-title {
-            font-size: 2rem;
-            font-weight: 700;
-            margin-bottom: 15px;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-        }
-
-        .welcome-subtitle {
-            font-size: 1.1rem;
-            opacity: 0.9;
-            margin-bottom: 40px;
-            line-height: 1.5;
-            max-width: 350px;
-        }
-
-        .start-button {
-            background: rgba(255, 255, 255, 0.2);
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            color: white;
-            font-size: 1.2rem;
-            font-weight: 600;
-            padding: 18px 40px;
-            border-radius: 50px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(10px);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .start-button:hover, .start-button:active {
-            background: rgba(255, 255, 255, 0.3);
-            border-color: rgba(255, 255, 255, 0.5);
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-        }
-
-        /* AR Interface */
-        .ar-interface {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100vh;
-            z-index: 1000;
-            pointer-events: none;
-        }
-
-        /* Top Bar */
-        .top-bar {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, transparent 100%);
-            padding: 15px 20px 30px;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            z-index: 10;
-        }
-
-        .status-chip {
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 8px 15px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            background: #ff6b6b;
-            border-radius: 50%;
-            animation: pulse 2s infinite;
-        }
-
-        .status-dot.active {
-            background: #00ff88;
-        }
-
-        .close-button {
-            background: rgba(255, 255, 255, 0.2);
-            border: none;
-            color: white;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-            pointer-events: auto;
-            transition: all 0.3s ease;
-        }
-
-        .close-button:hover {
-            background: rgba(255, 255, 255, 0.3);
-            transform: scale(1.1);
-        }
-
-        /* Marker Counter */
-        .marker-counter {
-            position: absolute;
-            top: 80px;
-            left: 20px;
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 10px 15px;
-            border-radius: 15px;
-            font-size: 12px;
-            font-weight: 600;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        /* Scanning Overlay */
-        .scanning-overlay {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 280px;
-            height: 280px;
-            border: 2px solid rgba(255, 255, 255, 0.5);
-            border-radius: 20px;
-            background: rgba(0, 0, 0, 0.1);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            backdrop-filter: blur(5px);
-        }
-
-        .scan-corners {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-        }
-
-        .scan-corner {
-            position: absolute;
-            width: 25px;
-            height: 25px;
-            border: 3px solid #00ff88;
-        }
-
-        .scan-corner.top-left {
-            top: -2px;
-            left: -2px;
-            border-right: none;
-            border-bottom: none;
-            border-radius: 20px 0 0 0;
-        }
-
-        .scan-corner.top-right {
-            top: -2px;
-            right: -2px;
-            border-left: none;
-            border-bottom: none;
-            border-radius: 0 20px 0 0;
-        }
-
-        .scan-corner.bottom-left {
-            bottom: -2px;
-            left: -2px;
-            border-right: none;
-            border-top: none;
-            border-radius: 0 0 0 20px;
-        }
-
-        .scan-corner.bottom-right {
-            bottom: -2px;
-            right: -2px;
-            border-left: none;
-            border-top: none;
-            border-radius: 0 0 20px 0;
-        }
-
-        .scan-line {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, transparent, #00ff88, transparent);
-            animation: scan 2s linear infinite;
-        }
-
-        @keyframes scan {
-            0% { top: 0; }
-            100% { top: 100%; }
-        }
-
-        .scan-text {
-            color: white;
-            font-size: 16px;
-            font-weight: 600;
-            text-align: center;
-            margin-top: 20px;
-            opacity: 0.9;
-        }
-
-        /* Bottom Instructions */
-        .bottom-instructions {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: linear-gradient(0deg, rgba(0,0,0,0.9) 0%, transparent 100%);
-            padding: 30px 20px 40px;
-            text-align: center;
-        }
-
-        .instruction-text {
-            color: white;
-            font-size: 16px;
-            font-weight: 500;
-            margin-bottom: 15px;
-            opacity: 0.9;
-        }
-
-        .tips {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            flex-wrap: wrap;
-        }
-
-        .tip {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 12px;
-        }
-
-        /* Media Found Notification */
-        .media-found {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.9);
-            color: white;
-            padding: 25px;
-            border-radius: 20px;
-            text-align: center;
-            backdrop-filter: blur(15px);
-            border: 2px solid rgba(0, 255, 136, 0.3);
-            display: none;
-            min-width: 200px;
-        }
-
-        .media-found.show {
-            display: block;
-            animation: slideUp 0.5s ease;
-        }
-
-        .media-icon {
-            font-size: 3rem;
-            margin-bottom: 15px;
-        }
-
-        .media-title {
-            font-weight: 600;
-            font-size: 18px;
-            margin-bottom: 8px;
-        }
-
-        .media-subtitle {
-            opacity: 0.8;
-            font-size: 14px;
-        }
-
-        @keyframes slideUp {
-            from { transform: translate(-50%, 100%); opacity: 0; }
-            to { transform: translate(-50%, -50%); opacity: 1; }
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-
-        /* AR Scene */
-        a-scene {
-            width: 100%;
-            height: 100vh;
-            display: none;
-        }
-
-        a-scene.active {
-            display: block;
-        }
-
-        /* Volume Control */
-        .volume-control {
-            position: absolute;
-            bottom: 120px;
-            right: 20px;
-            background: rgba(0, 0, 0, 0.8);
-            border-radius: 25px;
-            padding: 10px;
-            display: none;
-            pointer-events: auto;
-        }
-
-        .volume-control.show {
-            display: block;
-        }
-
-        .volume-button {
-            background: none;
-            border: none;
-            color: white;
-            font-size: 1.5rem;
-            padding: 8px;
-            cursor: pointer;
-            border-radius: 50%;
-            transition: all 0.3s ease;
-        }
-
-        .volume-button:hover {
-            background: rgba(255, 255, 255, 0.2);
-        }
-
-        /* Responsive */
-        @media (max-height: 600px) {
-            .welcome-title { font-size: 1.5rem; }
-            .welcome-subtitle { font-size: 1rem; }
-            .start-button { padding: 15px 35px; font-size: 1.1rem; }
-            .scanning-overlay { width: 220px; height: 220px; }
-        }
+      body { margin:0; overflow:hidden; }
+      #muteButton {
+        position: fixed;
+        bottom: 20px;
+        left: 20px;
+        padding: 10px 15px;
+        font-size: 16px;
+        background: rgba(0,0,0,0.7);
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+      }
     </style>
-</head>
-<body>
-    <!-- Welcome Screen -->
-    <div class="welcome-screen" id="welcomeScreen">
-        <div class="app-icon">🖼️</div>
-        <h1 class="welcome-title">AR Galerie</h1>
-        <p class="welcome-subtitle">Naskenujte různé markery a objevte skrytá videa a obrázky v rozšířené realitě</p>
-        <button class="start-button" id="startButton">🔍 Spustit AR Galerii</button>
-    </div>
+  </head>
+  <body>
+    <!-- tlačítko mute/unmute -->
+    <button id="muteButton">🔇 Zvuk vypnutý</button>
 
-    <!-- AR Interface -->
-    <div class="ar-interface" id="arInterface">
-        <!-- Top Bar -->
-        <div class="top-bar">
-            <div class="status-chip">
-                <div class="status-dot" id="statusDot"></div>
-                <span id="statusText">Hledám markery...</span>
-            </div>
-            <button class="close-button" id="closeButton">×</button>
-        </div>
+    <a-scene embedded arjs>
+      <!-- Marker 1 -->
+      <a-marker type="pattern" url="marker1.patt" id="marker1">
+        <a-video id="video1" src="video1.mp4"
+          width="2" height="1" position="0 0 0" rotation="-90 0 0"
+          loop="true" preload="auto"
+          material="shader: flat; transparent: true; opacity: 0.95;">
+        </a-video>
+      </a-marker>
 
-        <!-- Marker Counter -->
-        <div class="marker-counter" id="markerCounter">
-            📍 Nalezeno: <span id="foundCount">0</span> markerů
-        </div>
+      <!-- Marker 2 -->
+      <a-marker type="pattern" url="marker2.patt" id="marker2">
+        <a-video id="video2" src="video2.mp4"
+          width="2" height="1" position="0 0 0" rotation="-90 0 0"
+          loop="true" preload="auto"
+          material="shader: flat; transparent: true; opacity: 0.95;">
+        </a-video>
+      </a-marker>
 
-        <!-- Volume Control -->
-        <div class="volume-control" id="volumeControl">
-            <button class="volume-button" id="muteButton">🔊</button>
-        </div>
-
-        <!-- Scanning Overlay -->
-        <div class="scanning-overlay">
-            <div class="scan-corners">
-                <div class="scan-corner top-left"></div>
-                <div class="scan-corner top-right"></div>
-                <div class="scan-corner bottom-left"></div>
-                <div class="scan-corner bottom-right"></div>
-                <div class="scan-line"></div>
-            </div>
-            <div class="scan-text">Nasměrujte na marker</div>
-        </div>
-
-        <!-- Bottom Instructions -->
-        <div class="bottom-instructions">
-            <div class="instruction-text">🎯 Hledejte různé markery pro různý obsah</div>
-            <div class="tips">
-                <div class="tip">💡 Dobré osvětlení</div>
-                <div class="tip">📏 20-50cm vzdálenost</div>
-                <div class="tip">🎬 Video + 📸 Obrázky</div>
-            </div>
-        </div>
-
-        <!-- Media Found Notification -->
-        <div class="media-found" id="mediaFound">
-            <div class="media-icon" id="mediaIcon">🎬</div>
-            <div class="media-title" id="mediaTitle">Video nalezeno!</div>
-            <div class="media-subtitle" id="mediaSubtitle">Přehrávání začíná...</div>
-        </div>
-    </div>
-
-    <!-- AR Scene -->
-    <a-scene 
-        id="arScene"
-        embedded 
-        arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3; trackingMethod: best;"
-        vr-mode-ui="enabled: false">
-        
-        <!-- Marker 1 - Video mari.mp4 -->
-        <a-marker type="pattern" url="mari.patt" markerhandler marker-id="mari" id="marker1">
-            <a-video 
-                id="arVideo1"
-                src="mari.mp4" 
-                width="2" 
-                height="1" 
-                loop="true" 
-                muted="false"
-                preload="auto"
-                position="0 0 0"
-                rotation="-90 0 0"
-                material="shader: flat; transparent: true; opacity: 0.95;"
-                video-handler>
-            </a-video>
-            
-            <!-- Glow effect -->
-            <a-plane 
-                width="2.2" 
-                height="1.2" 
-                position="0 0 -0.01"
-                material="color: #00ff88; transparent: true; opacity: 0.1; shader: flat"
-                animation="property: material.opacity; to: 0.2; dir: alternate; dur: 2000; loop: true">
-            </a-plane>
-        </a-marker>
-
-        <!-- Marker 2 - Druhé video (přidejte svůj pattern a video) -->
-        <a-marker type="pattern" url="marker2.patt" markerhandler marker-id="marker2" id="marker2">
-            <a-video 
-                id="arVideo2"
-                src="video2.mp4" 
-                width="2" 
-                height="1" 
-                loop="true" 
-                muted="false"
-                preload="auto"
-                position="0 0 0"
-                rotation="-90 0 0"
-                material="shader: flat; transparent: true; opacity: 0.95;"
-                video-handler>
-            </a-video>
-            
-            <a-plane 
-                width="2.2" 
-                height="1.2" 
-                position="0 0 -0.01"
-                material="color: #ff6b6b; transparent: true; opacity: 0.1; shader: flat"
-                animation="property: material.opacity; to: 0.2; dir: alternate; dur: 2000; loop: true">
-            </a-plane>
-        </a-marker>
-
-        <!-- Marker 3 - Obrázek -->
-        <a-marker type="pattern" url="photo.patt" markerhandler marker-id="photo" id="marker3">
-            <a-image 
-                id="arImage1"
-                src="photo.jpg" 
-                width="2" 
-                height="1.5" 
-                position="0 0 0"
-                rotation="-90 0 0"
-                material="shader: flat; transparent: true; opacity: 0.95;"
-                animation__mouseenter="property: scale; to: 1.1 1.1 1.1; dur: 300"
-                animation__mouseleave="property: scale; to: 1 1 1; dur: 300">
-            </a-image>
-            
-            <a-plane 
-                width="2.2" 
-                height="1.7" 
-                position="0 0 -0.01"
-                material="color: #764ba2; transparent: true; opacity: 0.1; shader: flat"
-                animation="property: material.opacity; to: 0.2; dir: alternate; dur: 2000; loop: true">
-            </a-plane>
-        </a-marker>
-
-        <!-- Můžete přidat více markerů podle potřeby -->
-        
-        <a-entity camera look-controls wasd-controls></a-entity>
+      <a-entity camera></a-entity>
     </a-scene>
 
     <script>
-        class ARGalleryApp {
-            constructor() {
-                this.isScanning = false;
-                this.foundMarkers = new Set();
-                this.currentVideo = null;
-                this.isMuted = false;
-                
-                // Marker configurations
-                this.markerConfigs = {
-                    'mari': { type: 'video', title: 'Mari Video', icon: '🎬' },
-                    'marker2': { type: 'video', title: 'Druhé Video', icon: '🎥' },
-                    'photo': { type: 'image', title: 'Fotografie', icon: '📸' }
-                };
-                
-                this.init();
-            }
+      class ARGallery {
+        constructor() {
+          this.isMuted = true;
+          this.videos = document.querySelectorAll("video");
+          this.markers = document.querySelectorAll("a-marker");
 
-            init() {
-                // Get elements
-                this.welcomeScreen = document.getElementById('welcomeScreen');
-                this.arInterface = document.getElementById('arInterface');
-                this.arScene = document.getElementById('arScene');
-                this.startButton = document.getElementById('startButton');
-                this.closeButton = document.getElementById('closeButton');
-                this.statusDot = document.getElementById('statusDot');
-                this.statusText = document.getElementById('statusText');
-                this.mediaFound = document.getElementById('mediaFound');
-                this.foundCount = document.getElementById('foundCount');
-                this.volumeControl = document.getElementById('volumeControl');
-                this.muteButton = document.getElementById('muteButton');
+          // Zastavíme všechna videa na začátku
+          this.videos.forEach(v => {
+            v.pause();
+            v.currentTime = 0;
+            v.muted = true;
+          });
 
-                // Bind events
-                this.startButton.addEventListener('click', () => this.startScanning());
-                this.closeButton.addEventListener('click', () => this.stopScanning());
-                this.muteButton.addEventListener('click', () => this.toggleMute());
+          // Události pro markery
+          this.markers.forEach(marker => {
+            marker.addEventListener("markerFound", () => this.playVideo(marker));
+            marker.addEventListener("markerLost", () => this.stopVideo(marker));
+          });
 
-                // Setup AR events when scene is loaded
-                this.arScene.addEventListener('loaded', () => {
-                    this.setupAREvents();
-                });
-            }
-
-            async startScanning() {
-                try {
-                    // Request camera permission
-                    const stream = await navigator.mediaDevices.getUserMedia({ 
-                        video: { 
-                            facingMode: { ideal: 'environment' },
-                            width: { ideal: 1280 },
-                            height: { ideal: 720 }
-                        } 
-                    });
-                    stream.getTracks().forEach(track => track.stop());
-
-                    // Show AR interface
-                    this.welcomeScreen.classList.add('hidden');
-                    this.arScene.classList.add('active');
-                    this.isScanning = true;
-
-                    // Update status
-                    this.updateStatus('scanning');
-
-                } catch (error) {
-                    console.error('Camera access denied:', error);
-                    alert('Prosím povolte přístup ke kameře pro AR skenování.');
-                }
-            }
-
-            stopScanning() {
-                this.isScanning = false;
-                this.foundMarkers.clear();
-                this.stopAllVideos();
-                
-                // Hide AR interface
-                this.arScene.classList.remove('active');
-                this.welcomeScreen.classList.remove('hidden');
-                this.volumeControl.classList.remove('show');
-                
-                // Reset counter
-                this.updateFoundCount();
-            }
-
-            setupAREvents() {
-                // Setup events for all markers
-                Object.keys(this.markerConfigs).forEach(markerId => {
-                    const markerElement = document.querySelector(`[marker-id="${markerId}"]`);
-                    
-                    if (markerElement) {
-                        markerElement.addEventListener('markerFound', () => {
-                            console.log(`🎯 Marker ${markerId} found!`);
-                            this.onMarkerFound(markerId);
-                        });
-
-                        markerElement.addEventListener('markerLost', () => {
-                            console.log(`❌ Marker ${markerId} lost!`);
-                            this.onMarkerLost(markerId);
-                        });
-                    }
-                });
-            }
-
-            onMarkerFound(markerId) {
-                this.foundMarkers.add(markerId);
-                const config = this.markerConfigs[markerId];
-                
-                this.updateStatus('found');
-                this.updateFoundCount();
-                this.showMediaFound(config);
-                
-                if (config.type === 'video') {
-                    this.playVideo(markerId);
-                    this.volumeControl.classList.add('show');
-                }
-            }
-
-            onMarkerLost(markerId) {
-                this.foundMarkers.delete(markerId);
-                const config = this.markerConfigs[markerId];
-                
-                if (config.type === 'video') {
-                    this.stopVideo(markerId);
-                }
-                
-                this.updateFoundCount();
-                
-                if (this.foundMarkers.size === 0) {
-                    this.updateStatus('scanning');
-                    this.volumeControl.classList.remove('show');
-                }
-            }
-
-            playVideo(markerId) {
-                // Najdi odpovídající video element
-                const videoElements = document.querySelectorAll('[video-handler]');
-                videoElements.forEach(videoEl => {
-                    const marker = videoEl.closest('a-marker');
-                    if (marker && marker.getAttribute('marker-id') === markerId) {
-                        // Zastavíme jiná videa
-                        this.stopAllVideos();
-                        
-                        // Spustíme aktuální video
-                        setTimeout(() => {
-                            const videoComponent = videoEl.components.material;
-                            if (videoComponent && videoComponent.material.map && videoComponent.material.map.image) {
-                                const video = videoComponent.material.map.image;
-                                video.muted = this.isMuted;
-                                video.play().catch(e => {
-                                    console.log('Video autoplay blocked, trying muted:', e);
-                                    video.muted = true;
-                                    this.isMuted = true;
-                                    this.updateMuteButton();
-                                    video.play();
-                                });
-                                this.currentVideo = video;
-                            }
-                        }, 500);
-                    }
-                });
-            }
-
-            stopVideo(markerId) {
-                const videoElements = document.querySelectorAll('[video-handler]');
-                videoElements.forEach(videoEl => {
-                    const marker = videoEl.closest('a-marker');
-                    if (marker && marker.getAttribute('marker-id') === markerId) {
-                        const videoComponent = videoEl.components.material;
-                        if (videoComponent && videoComponent.material.map && videoComponent.material.map.image) {
-                            const video = videoComponent.material.map.image;
-                            video.pause();
-                            video.currentTime = 0;
-                        }
-                    }
-                });
-            }
-
-            stopAllVideos() {
-                const videoElements = document.querySelectorAll('[video-handler]');
-                videoElements.forEach(videoEl => {
-                    const videoComponent = videoEl.components.material;
-                    if (videoComponent && videoComponent.material.map && videoComponent.material.map.image) {
-                        const video = videoComponent.material.map.image;
-                        video.pause();
-                        video.currentTime = 0;
-                    }
-                });
-                this.currentVideo = null;
-            }
-
-            toggleMute() {
-                this.isMuted = !this.isMuted;
-                
-                if (this.currentVideo) {
-                    this.currentVideo.muted = this.isMuted;
-                }
-                
-                this.updateMuteButton();
-            }
-
-            updateMuteButton() {
-                this.muteButton.textContent = this.isMuted ? '🔇' : '🔊';
-            }
-
-            updateStatus(state) {
-                switch (state) {
-                    case 'scanning':
-                        this.statusDot.classList.remove('active');
-                        this.statusText.textContent = 'Hledám markery...';
-                        break;
-                    case 'found':
-                        this.statusDot.classList.add('active');
-                        this.statusText.textContent = `Nalezeno ${this.foundMarkers.size} markerů`;
-                        break;
-                }
-            }
-
-            updateFoundCount() {
-                this.foundCount.textContent = this.foundMarkers.size;
-            }
-
-            showMediaFound(config) {
-                const mediaIcon = document.getElementById('mediaIcon');
-                const mediaTitle = document.getElementById('mediaTitle');
-                const mediaSubtitle = document.getElementById('mediaSubtitle');
-                
-                mediaIcon.textContent = config.icon;
-                mediaTitle.textContent = config.title;
-                mediaSubtitle.textContent = config.type === 'video' ? 'Přehrávání začíná...' : 'Obrázek načten!';
-                
-                this.mediaFound.classList.add('show');
-                setTimeout(() => {
-                    this.mediaFound.classList.remove('show');
-                }, 3000);
-            }
+          // Tlačítko zvuku
+          this.muteButton = document.getElementById("muteButton");
+          this.muteButton.addEventListener("click", () => this.toggleMute());
+          this.updateMuteButton();
         }
 
-        // Initialize app when DOM is loaded
-        document.addEventListener('DOMContentLoaded', () => {
-            new ARGalleryApp();
-        });
+        playVideo(marker) {
+          const videoEl = marker.querySelector("video");
+          if (!videoEl) return;
 
-        // Register A-Frame components
-        AFRAME.registerComponent('markerhandler', {
-            init: function () {
-                // Marker events are handled in the main app class
-            }
-        });
+          // stopnout všechna ostatní videa
+          this.videos.forEach(v => { v.pause(); v.currentTime = 0; });
 
-        AFRAME.registerComponent('video-handler', {
-            init: function () {
-                // Video-specific handling
-            }
-        });
+          videoEl.muted = this.isMuted;
+          videoEl.play().catch(err => {
+            console.warn("Autoplay blokován, přehrávám potichu:", err);
+            videoEl.muted = true;
+            this.isMuted = true;
+            this.updateMuteButton();
+            videoEl.play();
+          });
+        }
 
-        // Handle orientation changes
-        window.addEventListener('orientationchange', () => {
-            setTimeout(() => {
-                if (document.getElementById('arScene').classList.contains('active')) {
-                    location.reload();
-                }
-            }, 500);
-        });
+        stopVideo(marker) {
+          const videoEl = marker.querySelector("video");
+          if (videoEl) {
+            videoEl.pause();
+            videoEl.currentTime = 0;
+          }
+        }
 
-        // Prevent zoom on double tap
-        document.addEventListener('touchstart', (e) => {
-            if (e.touches.length > 1) {
-                e.preventDefault();
-            }
-        });
+        toggleMute() {
+          this.isMuted = !this.isMuted;
+          this.videos.forEach(v => v.muted = this.isMuted);
+          this.updateMuteButton();
+        }
 
-        let lastTouchEnd = 0;
-        document.addEventListener('touchend', (e) => {
-            const now = (new Date()).getTime();
-            if (now - lastTouchEnd <= 300) {
-                e.preventDefault();
-            }
-            lastTouchEnd = now;
-        }, false);
+        updateMuteButton() {
+          this.muteButton.textContent = this.isMuted ? "🔇 Zvuk vypnutý" : "🔊 Zvuk zapnutý";
+        }
+      }
+
+      document.addEventListener("DOMContentLoaded", () => {
+        new ARGallery();
+      });
     </script>
-</body>
+  </body>
 </html>
