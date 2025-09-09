@@ -2,198 +2,403 @@
 <html lang="cs">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AR Video Player</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>AR Video Scanner</title>
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
     <script src="https://cdn.rawgit.com/jeromeetienne/AR.js/master/aframe/build/aframe-ar.js"></script>
     <style>
-        body {
+        * {
             margin: 0;
             padding: 0;
-            overflow: hidden;
-            font-family: 'Arial', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-sizing: border-box;
         }
 
-        /* Loading overlay */
-        .loading-overlay {
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #000;
+            overflow: hidden;
+            height: 100vh;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        /* Welcome Screen */
+        .welcome-screen {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
-            height: 100%;
+            height: 100vh;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            z-index: 1000;
-            transition: opacity 0.5s ease;
+            z-index: 2000;
+            color: white;
+            text-align: center;
+            padding: 20px;
+            transition: opacity 0.5s ease, transform 0.5s ease;
         }
 
-        .loading-overlay.hidden {
+        .welcome-screen.hidden {
             opacity: 0;
+            transform: translateY(-100%);
             pointer-events: none;
         }
 
-        .loading-spinner {
-            width: 50px;
-            height: 50px;
-            border: 4px solid rgba(255, 255, 255, 0.3);
-            border-top: 4px solid #ffffff;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
+        .app-icon {
+            font-size: 4rem;
             margin-bottom: 20px;
+            animation: float 3s ease-in-out infinite;
         }
 
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
         }
 
-        .loading-text {
+        .welcome-title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .welcome-subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            margin-bottom: 40px;
+            line-height: 1.5;
+            max-width: 300px;
+        }
+
+        .start-button {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
             color: white;
-            font-size: 18px;
-            font-weight: 300;
-            text-align: center;
+            font-size: 1.2rem;
+            font-weight: 600;
+            padding: 18px 40px;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
-        /* Control overlay */
-        .controls-overlay {
+        .start-button:hover, .start-button:active {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+
+        /* AR Interface */
+        .ar-interface {
             position: fixed;
-            top: 20px;
-            left: 20px;
-            right: 20px;
-            z-index: 100;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            z-index: 1000;
+            pointer-events: none;
+        }
+
+        /* Top Bar */
+        .top-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, transparent 100%);
+            padding: 15px 20px 30px;
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            pointer-events: none;
+            z-index: 10;
         }
 
-        .info-panel {
-            background: rgba(0, 0, 0, 0.7);
+        .status-chip {
+            background: rgba(0, 0, 0, 0.8);
             color: white;
-            padding: 15px 20px;
-            border-radius: 15px;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            max-width: 300px;
-            pointer-events: auto;
-        }
-
-        .info-panel h3 {
-            margin: 0 0 10px 0;
-            font-size: 16px;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 12px;
             font-weight: 600;
-        }
-
-        .info-panel p {
-            margin: 5px 0;
-            font-size: 12px;
-            opacity: 0.9;
-            line-height: 1.4;
-        }
-
-        .status-indicator {
-            background: rgba(0, 0, 0, 0.7);
-            color: white;
-            padding: 10px 15px;
-            border-radius: 25px;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            font-size: 12px;
             display: flex;
             align-items: center;
             gap: 8px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .status-dot {
             width: 8px;
             height: 8px;
-            background: #00ff00;
+            background: #ff6b6b;
             border-radius: 50%;
             animation: pulse 2s infinite;
         }
 
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
+        .status-dot.active {
+            background: #00ff88;
         }
 
-        /* Bottom instructions */
-        .instructions {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.7);
+        .close-button {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
             color: white;
-            padding: 15px 25px;
-            border-radius: 25px;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            text-align: center;
-            z-index: 100;
-            max-width: 90%;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            pointer-events: auto;
+            transition: all 0.3s ease;
         }
 
-        .instructions p {
-            margin: 0;
+        .close-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
+        }
+
+        /* Scanning Overlay */
+        .scanning-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 250px;
+            height: 250px;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            border-radius: 20px;
+            background: rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(5px);
+        }
+
+        .scan-corners {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+
+        .scan-corner {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #00ff88;
+        }
+
+        .scan-corner.top-left {
+            top: -2px;
+            left: -2px;
+            border-right: none;
+            border-bottom: none;
+            border-radius: 20px 0 0 0;
+        }
+
+        .scan-corner.top-right {
+            top: -2px;
+            right: -2px;
+            border-left: none;
+            border-bottom: none;
+            border-radius: 0 20px 0 0;
+        }
+
+        .scan-corner.bottom-left {
+            bottom: -2px;
+            left: -2px;
+            border-right: none;
+            border-top: none;
+            border-radius: 0 0 0 20px;
+        }
+
+        .scan-corner.bottom-right {
+            bottom: -2px;
+            right: -2px;
+            border-left: none;
+            border-top: none;
+            border-radius: 0 0 20px 0;
+        }
+
+        .scan-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00ff88, transparent);
+            animation: scan 2s linear infinite;
+        }
+
+        @keyframes scan {
+            0% { top: 0; }
+            100% { top: 100%; }
+        }
+
+        .scan-text {
+            color: white;
             font-size: 14px;
+            font-weight: 500;
+            text-align: center;
+            margin-top: 20px;
             opacity: 0.9;
         }
 
-        /* Responsive design */
-        @media (max-width: 768px) {
-            .controls-overlay {
-                flex-direction: column;
-                gap: 15px;
-            }
-            
-            .info-panel {
-                max-width: none;
-            }
-            
-            .instructions {
-                bottom: 10px;
-                left: 10px;
-                right: 10px;
-                transform: none;
-                max-width: none;
-            }
+        /* Bottom Instructions */
+        .bottom-instructions {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(0deg, rgba(0,0,0,0.9) 0%, transparent 100%);
+            padding: 30px 20px 40px;
+            text-align: center;
         }
 
-        /* AR Scene enhancements */
+        .instruction-text {
+            color: white;
+            font-size: 16px;
+            font-weight: 500;
+            margin-bottom: 15px;
+            opacity: 0.9;
+        }
+
+        .tips {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .tip {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 12px;
+        }
+
+        /* Video Found State */
+        .video-found {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            display: none;
+        }
+
+        .video-found.show {
+            display: block;
+            animation: slideUp 0.5s ease;
+        }
+
+        @keyframes slideUp {
+            from { transform: translate(-50%, 100%); }
+            to { transform: translate(-50%, -50%); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* AR Scene */
         a-scene {
             width: 100%;
             height: 100vh;
+            display: none;
+        }
+
+        a-scene.active {
+            display: block;
+        }
+
+        /* Responsive adjustments */
+        @media (max-height: 600px) {
+            .welcome-title { font-size: 1.5rem; }
+            .welcome-subtitle { font-size: 1rem; }
+            .start-button { padding: 15px 35px; font-size: 1.1rem; }
         }
     </style>
 </head>
 <body>
-    <!-- Loading Overlay -->
-    <div class="loading-overlay" id="loadingOverlay">
-        <div class="loading-spinner"></div>
-        <div class="loading-text">Načítám AR aplikaci...</div>
+    <!-- Welcome Screen -->
+    <div class="welcome-screen" id="welcomeScreen">
+        <div class="app-icon">📱</div>
+        <h1 class="welcome-title">AR Video Scanner</h1>
+        <p class="welcome-subtitle">Naskenujte marker a sledujte video v rozšířené realitě</p>
+        <button class="start-button" id="startButton">🔍 Začít Skenování</button>
     </div>
 
-    <!-- Instructions -->
-    <div class="instructions">
-        <p>📱 Nasměrujte kameru na marker pro přehrání videa</p>
+    <!-- AR Interface -->
+    <div class="ar-interface" id="arInterface">
+        <!-- Top Bar -->
+        <div class="top-bar">
+            <div class="status-chip">
+                <div class="status-dot" id="statusDot"></div>
+                <span id="statusText">Hledám marker...</span>
+            </div>
+            <button class="close-button" id="closeButton">×</button>
+        </div>
+
+        <!-- Scanning Overlay -->
+        <div class="scanning-overlay">
+            <div class="scan-corners">
+                <div class="scan-corner top-left"></div>
+                <div class="scan-corner top-right"></div>
+                <div class="scan-corner bottom-left"></div>
+                <div class="scan-corner bottom-right"></div>
+                <div class="scan-line"></div>
+            </div>
+            <div class="scan-text">Nasměrujte kameru na marker</div>
+        </div>
+
+        <!-- Bottom Instructions -->
+        <div class="bottom-instructions">
+            <div class="instruction-text">📍 Udržujte marker v rámečku</div>
+            <div class="tips">
+                <div class="tip">💡 Dobré osvětlení</div>
+                <div class="tip">📏 Vzdálenost 20-50cm</div>
+                <div class="tip">🎯 Stabilní pohyb</div>
+            </div>
+        </div>
+
+        <!-- Video Found Notification -->
+        <div class="video-found" id="videoFound">
+            <div style="font-size: 2rem; margin-bottom: 10px;">🎬</div>
+            <div style="font-weight: 600; margin-bottom: 5px;">Video nalezeno!</div>
+            <div style="opacity: 0.8; font-size: 14px;">Přehrávání začíná...</div>
+        </div>
     </div>
 
     <!-- AR Scene -->
     <a-scene 
+        id="arScene"
         embedded 
-        arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
+        arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3; trackingMethod: best;"
         vr-mode-ui="enabled: false"
         gesture-detector>
         
-        <!-- Enhanced Marker with better video properties -->
-        <a-marker type="pattern" url="mari.patt" markerhandler>
+        <a-marker type="pattern" url="mari.patt" markerhandler id="marker">
             <a-video 
+                id="arVideo"
                 src="mari.mp4" 
                 width="2" 
                 height="1" 
@@ -203,17 +408,15 @@
                 preload="auto"
                 position="0 0 0"
                 rotation="-90 0 0"
-                material="shader: flat; transparent: true; opacity: 0.95;"
-                animation__mouseenter="property: scale; to: 1.1 1.1 1.1; startEvents: mouseenter; dur: 200"
-                animation__mouseleave="property: scale; to: 1 1 1; startEvents: mouseleave; dur: 200">
+                material="shader: flat; transparent: true; opacity: 0.95;">
             </a-video>
             
-            <!-- Optional: Add a subtle glow effect around the video -->
+            <!-- Glow effect -->
             <a-plane 
                 width="2.2" 
                 height="1.2" 
                 position="0 0 -0.01"
-                material="color: #ffffff; transparent: true; opacity: 0.1; shader: flat"
+                material="color: #00ff88; transparent: true; opacity: 0.1; shader: flat"
                 animation="property: material.opacity; to: 0.2; dir: alternate; dur: 2000; loop: true">
             </a-plane>
         </a-marker>
@@ -222,68 +425,171 @@
     </a-scene>
 
     <script>
-        // Enhanced JavaScript for better UX
-        document.addEventListener('DOMContentLoaded', function() {
-            const loadingOverlay = document.getElementById('loadingOverlay');
-            
-            // Hide loading overlay after AR.js is loaded
-            setTimeout(() => {
-                loadingOverlay.classList.add('hidden');
-            }, 2000);
+        class ARVideoApp {
+            constructor() {
+                this.isScanning = false;
+                this.markerFound = false;
+                this.init();
+            }
 
-            // Custom marker handler
-            AFRAME.registerComponent('markerhandler', {
-                init: function () {
-                    this.el.addEventListener('markerFound', function () {
-                        console.log('Marker nalezen!');
-                        // Optional: Add custom behavior when marker is found
-                    });
+            init() {
+                // Get elements
+                this.welcomeScreen = document.getElementById('welcomeScreen');
+                this.arInterface = document.getElementById('arInterface');
+                this.arScene = document.getElementById('arScene');
+                this.startButton = document.getElementById('startButton');
+                this.closeButton = document.getElementById('closeButton');
+                this.statusDot = document.getElementById('statusDot');
+                this.statusText = document.getElementById('statusText');
+                this.videoFound = document.getElementById('videoFound');
 
-                    this.el.addEventListener('markerLost', function () {
-                        console.log('Marker ztracen!');
-                        // Optional: Add custom behavior when marker is lost
+                // Bind events
+                this.startButton.addEventListener('click', () => this.startScanning());
+                this.closeButton.addEventListener('click', () => this.stopScanning());
+
+                // Setup AR events when scene is loaded
+                this.arScene.addEventListener('loaded', () => {
+                    this.setupAREvents();
+                });
+            }
+
+            async startScanning() {
+                try {
+                    // Request camera permission
+                    const stream = await navigator.mediaDevices.getUserMedia({ 
+                        video: { 
+                            facingMode: { ideal: 'environment' },
+                            width: { ideal: 1280 },
+                            height: { ideal: 720 }
+                        } 
                     });
+                    stream.getTracks().forEach(track => track.stop()); // Stop the test stream
+
+                    // Show AR interface
+                    this.welcomeScreen.classList.add('hidden');
+                    this.arScene.classList.add('active');
+                    this.isScanning = true;
+
+                    // Update status
+                    this.updateStatus('scanning');
+
+                } catch (error) {
+                    console.error('Camera access denied:', error);
+                    alert('Prosím povolte přístup ke kameře pro AR skenování.');
                 }
-            });
+            }
 
-            // Update status indicator based on marker detection
-            let markerFound = false;
-            const statusDot = document.querySelector('.status-dot');
-            const statusText = document.querySelector('.status-indicator');
+            stopScanning() {
+                this.isScanning = false;
+                this.markerFound = false;
+                
+                // Hide AR interface
+                this.arScene.classList.remove('active');
+                this.welcomeScreen.classList.remove('hidden');
+                
+                // Reset video
+                const video = document.getElementById('arVideo');
+                if (video && video.components.material) {
+                    video.pause();
+                }
+            }
 
-            // Listen for marker events
-            document.querySelector('a-marker').addEventListener('markerFound', function() {
-                markerFound = true;
-                statusDot.style.background = '#00ff00';
-                statusText.innerHTML = '<div class="status-dot"></div>Marker Detekován';
-            });
+            setupAREvents() {
+                const marker = document.getElementById('marker');
+                
+                marker.addEventListener('markerFound', () => {
+                    console.log('🎯 Marker found!');
+                    this.markerFound = true;
+                    this.updateStatus('found');
+                    this.showVideoFound();
+                    
+                    // Start video playback
+                    setTimeout(() => {
+                        const video = document.getElementById('arVideo');
+                        if (video && video.components.material) {
+                            video.play();
+                        }
+                    }, 500);
+                });
 
-            document.querySelector('a-marker').addEventListener('markerLost', function() {
-                markerFound = false;
-                statusDot.style.background = '#ff6b6b';
-                statusText.innerHTML = '<div class="status-dot"></div>Hledám Marker...';
-            });
+                marker.addEventListener('markerLost', () => {
+                    console.log('❌ Marker lost!');
+                    this.markerFound = false;
+                    this.updateStatus('scanning');
+                    this.hideVideoFound();
+                });
+            }
 
-            // Handle device orientation changes
-            window.addEventListener('orientationchange', function() {
+            updateStatus(state) {
+                switch (state) {
+                    case 'scanning':
+                        this.statusDot.classList.remove('active');
+                        this.statusText.textContent = 'Hledám marker...';
+                        break;
+                    case 'found':
+                        this.statusDot.classList.add('active');
+                        this.statusText.textContent = 'Video přehrává';
+                        break;
+                }
+            }
+
+            showVideoFound() {
+                this.videoFound.classList.add('show');
                 setTimeout(() => {
-                    location.reload();
-                }, 500);
-            });
+                    this.videoFound.classList.remove('show');
+                }, 3000);
+            }
+
+            hideVideoFound() {
+                this.videoFound.classList.remove('show');
+            }
+        }
+
+        // Initialize app when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            new ARVideoApp();
         });
 
-        // Performance optimization
-        AFRAME.registerComponent('gesture-detector', {
-            schema: {
-                element: {default: ''}
-            },
+        // Register A-Frame components
+        AFRAME.registerComponent('markerhandler', {
             init: function () {
-                this.targetElement = this.data.element && document.querySelector(this.data.element);
-                
-                // Optimize rendering
-                this.el.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                // Marker events are handled in the main app class
             }
         });
+
+        AFRAME.registerComponent('gesture-detector', {
+            init: function () {
+                // Optimize for mobile performance
+                if (this.el.renderer) {
+                    this.el.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                }
+            }
+        });
+
+        // Handle orientation changes
+        window.addEventListener('orientationchange', () => {
+            setTimeout(() => {
+                if (document.getElementById('arScene').classList.contains('active')) {
+                    location.reload();
+                }
+            }, 500);
+        });
+
+        // Prevent zoom on double tap
+        document.addEventListener('touchstart', (e) => {
+            if (e.touches.length > 1) {
+                e.preventDefault();
+            }
+        });
+
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', (e) => {
+            const now = (new Date()).getTime();
+            if (now - lastTouchEnd <= 300) {
+                e.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
     </script>
 </body>
 </html>
