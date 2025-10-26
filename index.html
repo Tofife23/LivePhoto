@@ -1,120 +1,18 @@
 <!DOCTYPE html>
 <html lang="cs">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AR Video Demo</title>
-
-  <!-- A-Frame a MindAR - DŮLEŽITÉ: nejdřív A-Frame, pak MindAR -->
-  <script src="https://cdn.jsdelivr.net/npm/aframe@1.5.0/dist/aframe.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
-
-  <style>
-    body { margin: 0; overflow: hidden; }
-    #loading { 
-      position: fixed; 
-      width: 100%; 
-      height: 100%; 
-      background: black; 
-      color: white; 
-      display: flex; 
-      justify-content: center; 
-      align-items: center; 
-      font-family: sans-serif; 
-      z-index: 9999;
-    }
-  </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mari Video</title>
 </head>
-<body>
-  <div id="loading">🔍 Načítám kameru...</div>
-
-  <a-scene
-    mindar-image="imageTargetSrc: https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/band-example/band.mind; autoStart: true;"
-    color-space="sRGB"
-    renderer="colorManagement: true, physicallyCorrectLights"
-    vr-mode-ui="enabled: false"
-    device-orientation-permission-ui="enabled: false"
-    embedded
-  >
-    <a-assets>
-      <!-- Použijte veřejně dostupná videa pro testování -->
-      <video id="mari-video" src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" preload="auto" loop webkit-playsinline playsinline crossorigin="anonymous"></video>
-      <video id="auto-video" src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4" preload="auto" loop webkit-playsinline playsinline crossorigin="anonymous"></video>
-    </a-assets>
-
-    <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
-
-    <!-- Obrázek 0 -->
-    <a-entity mindar-image-target="targetIndex: 0">
-      <a-video src="#mari-video" width="1" height="0.56" position="0 0 0" rotation="0 0 0"></a-video>
-    </a-entity>
-
-    <!-- Obrázek 1 -->
-    <a-entity mindar-image-target="targetIndex: 1">
-      <a-video src="#auto-video" width="1" height="0.56" position="0 0 0" rotation="0 0 0"></a-video>
-    </a-entity>
-
-  </a-scene>
+<body style="margin:0; background:black; display:flex; justify-content:center; align-items:center; height:100vh;">
+  <video id="video" src="mari.mp4" autoplay muted playsinline style="max-width:100%; max-height:100%;"></video>
 
   <script>
-    // Počkejte na načtení A-Frame
-    document.addEventListener('DOMContentLoaded', function() {
-      // Kontrola, zda je A-Frame načten
-      if (typeof AFRAME === 'undefined') {
-        console.error('A-Frame se nenačetl správně');
-        document.getElementById('loading').innerHTML = 'Chyba: A-Frame se nenačetl. Obnovte stránku.';
-        return;
-      }
-
-      const scene = document.querySelector('a-scene');
-      
-      scene.addEventListener('loaded', function() {
-        console.log('Scene loaded');
-        document.getElementById('loading').style.display = 'none';
-      });
-
-      scene.addEventListener('renderstart', function() {
-        console.log('Render started');
-        document.getElementById('loading').style.display = 'none';
-      });
-
-      // Spouštění/pauza videa podle rozpoznání cíle
-      document.querySelectorAll('[mindar-image-target]').forEach(target => {
-        target.addEventListener('targetFound', function() {
-          console.log('Target found');
-          const videoEl = target.querySelector('a-video');
-          if (videoEl) {
-            const videoId = videoEl.getAttribute('src').substring(1);
-            const video = document.getElementById(videoId);
-            
-            if (video) {
-              video.currentTime = 0;
-              video.play().catch(e => {
-                console.log('Chyba při spouštění videa:', e);
-              });
-            }
-          }
-        });
-        
-        target.addEventListener('targetLost', function() {
-          console.log('Target lost');
-          const videoEl = target.querySelector('a-video');
-          if (videoEl) {
-            const videoId = videoEl.getAttribute('src').substring(1);
-            const video = document.getElementById(videoId);
-            
-            if (video) {
-              video.pause();
-            }
-          }
-        });
-      });
-    });
-
-    // Fallback - skrýt loading po 10 sekundách
-    setTimeout(function() {
-      document.getElementById('loading').style.display = 'none';
-    }, 10000);
+    const video = document.getElementById('video');
+    // Autoplay na mobilu občas potřebuje muted
+    video.muted = false; // pokud chceš zvuk, někdy je nutné interakce uživatele
+    video.play();
   </script>
 </body>
 </html>
