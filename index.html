@@ -1,53 +1,87 @@
 <!DOCTYPE html>
 <html lang="cs">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mari Video</title>
-  <style>
-    body {
-      margin: 0;
-      background: black;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      color: white;
-      font-family: sans-serif;
-    }
-    button {
-      padding: 1rem 2rem;
-      font-size: 1.2rem;
-      cursor: pointer;
-      border: none;
-      border-radius: 8px;
-      background: #1e90ff;
-      color: white;
-    }
-    video {
-      margin-top: 20px;
-      max-width: 90%;
-      max-height: 80%;
-      border-radius: 8px;
-    }
-  </style>
-</head>
-<body>
-  <h1>Klepni pro přehrání videa</h1>
-  <button id="playBtn">Přehrát video</button>
-  <video id="video" src="mari.mp4" autoplay muted playsinline controls style="max-width:100%; max-height:100%;"></video>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mari AR Video</title>
 
+    <!-- MindAR a A-Frame knihovny -->
+    <script src="https://cdn.jsdelivr.net/npm/aframe@1.5.0/dist/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
 
-  <script>
-    const btn = document.getElementById('playBtn');
-    const video = document.getElementById('video');
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+      }
+      #loading {
+        position: fixed;
+        width: 100%;
+        height: 100%;
+        background: black;
+        color: white;
+        font-family: sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+    </style>
+  </head>
 
-    // Video se spustí po kliknutí
-    btn.addEventListener('click', () => {
-      video.play();
-      btn.style.display = 'none'; // skryj tlačítko
-    });
-  </script>
-</body>
+  <body>
+    <div id="loading">🔍 Načítám kameru...</div>
+
+    <!-- AR scéna -->
+    <a-scene
+      mindar-image="imageTargetSrc: ./mari.pat; autoStart: true;"
+      color-space="sRGB"
+      renderer="colorManagement: true, physicallyCorrectLights"
+      vr-mode-ui="enabled: false"
+      device-orientation-permission-ui="enabled: true"
+      embedded
+    >
+      <a-assets>
+        <video
+          id="mari-video"
+          src="./mari.mp4"
+          preload="auto"
+          loop
+          webkit-playsinline
+          playsinline
+        ></video>
+      </a-assets>
+
+      <!-- Kamera -->
+      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+      <!-- Cíl (obrázek) -->
+      <a-entity mindar-image-target="targetIndex: 0">
+        <a-video
+          src="#mari-video"
+          width="1"
+          height="0.56"
+          position="0 0 0"
+          rotation="0 0 0"
+        ></a-video>
+      </a-entity>
+    </a-scene>
+
+    <script>
+      // Skryje loading obrazovku po načtení
+      window.addEventListener("load", () => {
+        document.getElementById("loading").style.display = "none";
+      });
+
+      // Automatické přehrání videa, když se rozpozná obrázek
+      document.addEventListener("targetFound", () => {
+        const video = document.querySelector("#mari-video");
+        video.play();
+      });
+
+      document.addEventListener("targetLost", () => {
+        const video = document.querySelector("#mari-video");
+        video.pause();
+      });
+    </script>
+  </body>
 </html>
