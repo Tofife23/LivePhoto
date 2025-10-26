@@ -1,117 +1,36 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="utf-8" />
-    <title>AR Galerie</title>
-    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
-    <script src="https://cdn.rawgit.com/jeromeetienne/AR.js/master/aframe/build/aframe-ar.js"></script>
-    <style>
-      body { margin:0; overflow:hidden; }
-      #muteButton {
-        position: fixed;
-        bottom: 20px;
-        left: 20px;
-        padding: 10px 15px;
-        font-size: 16px;
-        background: rgba(0,0,0,0.7);
-        color: #fff;
-        border: none;
-        border-radius: 8px;
-        cursor: pointer;
-      }
-    </style>
-  </head>
-  <body>
-    <!-- tlačítko mute/unmute -->
-    <button id="muteButton">🔇 Zvuk vypnutý</button>
+<head>
+  <meta charset="utf-8">
+  <title>AR Video</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+  <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+  <style>
+    body { margin: 0; overflow: hidden; }
+    .loading { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-family: sans-serif; background: rgba(0,0,0,0.7); color: white; padding: 15px; border-radius: 10px; }
+  </style>
+</head>
+<body>
+  <div class="loading">Zachyť obrázek kamerou…</div>
+  <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;" renderer="logarithmicDepthBuffer: true;">
+    <a-marker preset="custom" type="pattern" url="mari.patt">
+      <a-video 
+        src="mari.mp4" 
+        width="2" height="1.2" position="0 0.5 0" 
+        autoplay="true" 
+        loop="true" 
+        volume="1"
+        play-detection="true">
+      </a-video>
+    </a-marker>
+    <a-entity camera></a-entity>
+  </a-scene>
 
-    <a-scene embedded arjs>
-      <!-- Marker 1 -->
-      <a-marker type="pattern" url="marker1.patt" id="marker1">
-        <a-video id="video1" src="video1.mp4"
-          width="2" height="1" position="0 0 0" rotation="-90 0 0"
-          loop="true" preload="auto"
-          material="shader: flat; transparent: true; opacity: 0.95;">
-        </a-video>
-      </a-marker>
-
-      <!-- Marker 2 -->
-      <a-marker type="pattern" url="marker2.patt" id="marker2">
-        <a-video id="video2" src="video2.mp4"
-          width="2" height="1" position="0 0 0" rotation="-90 0 0"
-          loop="true" preload="auto"
-          material="shader: flat; transparent: true; opacity: 0.95;">
-        </a-video>
-      </a-marker>
-
-      <a-entity camera></a-entity>
-    </a-scene>
-
-    <script>
-      class ARGallery {
-        constructor() {
-          this.isMuted = true;
-          this.videos = document.querySelectorAll("video");
-          this.markers = document.querySelectorAll("a-marker");
-
-          // Zastavíme všechna videa na začátku
-          this.videos.forEach(v => {
-            v.pause();
-            v.currentTime = 0;
-            v.muted = true;
-          });
-
-          // Události pro markery
-          this.markers.forEach(marker => {
-            marker.addEventListener("markerFound", () => this.playVideo(marker));
-            marker.addEventListener("markerLost", () => this.stopVideo(marker));
-          });
-
-          // Tlačítko zvuku
-          this.muteButton = document.getElementById("muteButton");
-          this.muteButton.addEventListener("click", () => this.toggleMute());
-          this.updateMuteButton();
-        }
-
-        playVideo(marker) {
-          const videoEl = marker.querySelector("video");
-          if (!videoEl) return;
-
-          // stopnout všechna ostatní videa
-          this.videos.forEach(v => { v.pause(); v.currentTime = 0; });
-
-          videoEl.muted = this.isMuted;
-          videoEl.play().catch(err => {
-            console.warn("Autoplay blokován, přehrávám potichu:", err);
-            videoEl.muted = true;
-            this.isMuted = true;
-            this.updateMuteButton();
-            videoEl.play();
-          });
-        }
-
-        stopVideo(marker) {
-          const videoEl = marker.querySelector("video");
-          if (videoEl) {
-            videoEl.pause();
-            videoEl.currentTime = 0;
-          }
-        }
-
-        toggleMute() {
-          this.isMuted = !this.isMuted;
-          this.videos.forEach(v => v.muted = this.isMuted);
-          this.updateMuteButton();
-        }
-
-        updateMuteButton() {
-          this.muteButton.textContent = this.isMuted ? "🔇 Zvuk vypnutý" : "🔊 Zvuk zapnutý";
-        }
-      }
-
-      document.addEventListener("DOMContentLoaded", () => {
-        new ARGallery();
-      });
-    </script>
-  </body>
+  <script>
+    document.querySelector('a-scene').addEventListener('loaded', () => {
+      document.querySelector('.loading').style.display = 'none';
+    });
+  </script>
+</body>
 </html>
