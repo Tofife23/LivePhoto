@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AR Video Demo</title>
 
-  <!-- A-Frame a MindAR -->
+  <!-- A-Frame a MindAR - DŮLEŽITÉ: nejdřív A-Frame, pak MindAR -->
   <script src="https://cdn.jsdelivr.net/npm/aframe@1.5.0/dist/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
 
@@ -29,7 +29,7 @@
   <div id="loading">🔍 Načítám kameru...</div>
 
   <a-scene
-    mindar-image="imageTargetSrc: ./targets.mind; autoStart: true;"
+    mindar-image="imageTargetSrc: https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/band-example/band.mind; autoStart: true;"
     color-space="sRGB"
     renderer="colorManagement: true, physicallyCorrectLights"
     vr-mode-ui="enabled: false"
@@ -37,8 +37,9 @@
     embedded
   >
     <a-assets>
-      <video id="mari-video" src="./mari.mp4" preload="auto" loop webkit-playsinline playsinline crossorigin="anonymous"></video>
-      <video id="auto-video" src="./auto.mp4" preload="auto" loop webkit-playsinline playsinline crossorigin="anonymous"></video>
+      <!-- Použijte veřejně dostupná videa pro testování -->
+      <video id="mari-video" src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" preload="auto" loop webkit-playsinline playsinline crossorigin="anonymous"></video>
+      <video id="auto-video" src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4" preload="auto" loop webkit-playsinline playsinline crossorigin="anonymous"></video>
     </a-assets>
 
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
@@ -56,36 +57,64 @@
   </a-scene>
 
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
+    // Počkejte na načtení A-Frame
+    document.addEventListener('DOMContentLoaded', function() {
+      // Kontrola, zda je A-Frame načten
+      if (typeof AFRAME === 'undefined') {
+        console.error('A-Frame se nenačetl správně');
+        document.getElementById('loading').innerHTML = 'Chyba: A-Frame se nenačetl. Obnovte stránku.';
+        return;
+      }
+
       const scene = document.querySelector('a-scene');
       
-      scene.addEventListener('loaded', () => {
+      scene.addEventListener('loaded', function() {
+        console.log('Scene loaded');
+        document.getElementById('loading').style.display = 'none';
+      });
+
+      scene.addEventListener('renderstart', function() {
+        console.log('Render started');
         document.getElementById('loading').style.display = 'none';
       });
 
       // Spouštění/pauza videa podle rozpoznání cíle
       document.querySelectorAll('[mindar-image-target]').forEach(target => {
-        target.addEventListener('targetFound', () => {
+        target.addEventListener('targetFound', function() {
+          console.log('Target found');
           const videoEl = target.querySelector('a-video');
-          const videoId = videoEl.getAttribute('src').substring(1);
-          const video = document.getElementById(videoId);
-          
-          if (video) {
-            video.play().catch(e => console.log('Chyba při spouštění videa:', e));
+          if (videoEl) {
+            const videoId = videoEl.getAttribute('src').substring(1);
+            const video = document.getElementById(videoId);
+            
+            if (video) {
+              video.currentTime = 0;
+              video.play().catch(e => {
+                console.log('Chyba při spouštění videa:', e);
+              });
+            }
           }
         });
         
-        target.addEventListener('targetLost', () => {
+        target.addEventListener('targetLost', function() {
+          console.log('Target lost');
           const videoEl = target.querySelector('a-video');
-          const videoId = videoEl.getAttribute('src').substring(1);
-          const video = document.getElementById(videoId);
-          
-          if (video) {
-            video.pause();
+          if (videoEl) {
+            const videoId = videoEl.getAttribute('src').substring(1);
+            const video = document.getElementById(videoId);
+            
+            if (video) {
+              video.pause();
+            }
           }
         });
       });
     });
+
+    // Fallback - skrýt loading po 10 sekundách
+    setTimeout(function() {
+      document.getElementById('loading').style.display = 'none';
+    }, 10000);
   </script>
 </body>
 </html>
