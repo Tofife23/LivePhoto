@@ -36,7 +36,8 @@
 <body>
   <h1>Klepni pro přehrání videa</h1>
   <button id="playBtn">Přehrát video</button>
-  <video id="video" src="mari.mp4" controls></video>
+  <video id="video" src="mari.mp4" autoplay muted playsinline controls style="max-width:100%; max-height:100%;"></video>
+
 
   <script>
     const btn = document.getElementById('playBtn');
