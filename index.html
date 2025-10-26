@@ -1,110 +1,88 @@
 <!DOCTYPE html>
 <html lang="cs">
-<head>
-  <meta charset="utf-8">
-  <title>AR Video</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mari AR Video</title>
 
-  <!-- Knihovny -->
-  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.5/aframe/build/aframe-ar.js"></script>
+    <!-- MindAR a A-Frame knihovny -->
+    <script src="https://cdn.jsdelivr.net/npm/aframe@1.5.0/dist/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
 
-  <style>
-    body { margin: 0; overflow: hidden; font-family: sans-serif; background: black; }
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+      }
+      #loading {
+        position: fixed;
+        width: 100%;
+        height: 100%;
+        background: black;
+        color: white;
+        font-family: sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+    </style>
+  </head>
 
-    #overlay, #loading {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-direction: column;
-      color: white;
-      background: rgba(0,0,0,0.9);
-      z-index: 10;
-    }
+  <body>
+    <div id="loading">🔍 Načítám kameru...</div>
 
-    #overlay button {
-      background: #00bcd4;
-      border: none;
-      padding: 12px 20px;
-      border-radius: 10px;
-      color: white;
-      font-size: 18px;
-      cursor: pointer;
-      margin-top: 15px;
-    }
+    <!-- AR scéna -->
+    <a-scene
+      mindar-image="imageTargetSrc: ./mari.pat; autoStart: true;"
+      color-space="sRGB"
+      renderer="colorManagement: true, physicallyCorrectLights"
+      vr-mode-ui="enabled: false"
+      device-orientation-permission-ui="enabled: true"
+      embedded
+    >
+      <a-assets>
+        <video
+          id="mari-video"
+          src="./mari.mp4"
+          preload="auto"
+          loop
+          webkit-playsinline
+          playsinline
+        ></video>
+      </a-assets>
 
-    #overlay button:hover { background: #0097a7; }
-    #loading { display: none; font-size: 18px; }
-    a-scene { width: 100vw; height: 100vh; display: none; }
-  </style>
-</head>
+      <!-- Kamera -->
+      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-<body>
-  <!-- Úvodní overlay -->
-  <div id="overlay">
-    <h2>Spusť AR</h2>
-    <p>Klikni na tlačítko a namiř kameru na obrázek.</p>
-    <button id="start">Začít AR</button>
-  </div>
+      <!-- Cíl (obrázek) -->
+      <a-entity mindar-image-target="targetIndex: 0">
+        <a-video
+          src="#mari-video"
+          width="1"
+          height="0.56"
+          position="0 0 0"
+          rotation="0 0 0"
+        ></a-video>
+      </a-entity>
+    </a-scene>
 
-  <!-- Načítání -->
-  <div id="loading">Načítám kameru…</div>
-
-  <!-- AR scéna -->
-  <a-scene
-    vr-mode-ui="enabled: false"
-    embedded
-    arjs="sourceType: webcam; debugUIEnabled: false;"
-    renderer="antialias: true; logarithmicDepthBuffer: true;"
-  >
-    <a-marker type="pattern" url="mari.patt">
-      <a-video id="vid" src="mari.mp4" width="1.8" height="1.0" position="0 0.5 0"></a-video>
-    </a-marker>
-    <a-entity camera></a-entity>
-  </a-scene>
-
-  <script>
-    const startBtn = document.getElementById('start');
-    const overlay = document.getElementById('overlay');
-    const loading = document.getElementById('loading');
-    const scene = document.querySelector('a-scene');
-    const videoEl = document.querySelector('#vid');
-
-    startBtn.addEventListener('click', async () => {
-      overlay.style.display = 'none';
-      loading.style.display = 'flex';
-
-      // zobrazíme scénu
-      scene.style.display = 'block';
-
-      // povolíme přehrání videa po uživatelském gestu (nutné pro mobily)
-      try {
-        const realVideo = videoEl.components.material.material.map.image;
-        if (realVideo) {
-          await realVideo.play().catch(() => {});
-          realVideo.pause(); // zastavíme, dokud se nenajde marker
-        }
-      } catch (e) {}
-
-      // schová loading po načtení
-      scene.addEventListener('loaded', () => {
-        setTimeout(() => loading.style.display = 'none', 1000);
+    <script>
+      // Skryje loading obrazovku po načtení
+      window.addEventListener("load", () => {
+        document.getElementById("loading").style.display = "none";
       });
 
-      // přehrávání videa po nalezení markeru
-      scene.addEventListener('markerFound', () => {
-        const realVideo = videoEl.components.material.material.map.image;
-        if (realVideo && realVideo.paused) realVideo.play();
+      // Automatické přehrání videa, když se rozpozná obrázek
+      document.addEventListener("targetFound", () => {
+        const video = document.querySelector("#mari-video");
+        video.play();
       });
 
-      scene.addEventListener('markerLost', () => {
-        const realVideo = videoEl.components.material.material.map.image;
-        if (realVideo && !realVideo.paused) realVideo.pause();
+      document.addEventListener("targetLost", () => {
+        const video = document.querySelector("#mari-video");
+        video.pause();
       });
-    });
-  </script>
-</body>
+    </script>
+  </body>
 </html>
+s
