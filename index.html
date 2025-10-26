@@ -9,25 +9,42 @@
       margin: 0;
       background: black;
       display: flex;
+      flex-direction: column;
       justify-content: center;
       align-items: center;
       height: 100vh;
+      color: white;
+      font-family: sans-serif;
+    }
+    button {
+      padding: 1rem 2rem;
+      font-size: 1.2rem;
+      cursor: pointer;
+      border: none;
+      border-radius: 8px;
+      background: #1e90ff;
+      color: white;
     }
     video {
-      max-width: 100%;
-      max-height: 100%;
+      margin-top: 20px;
+      max-width: 90%;
+      max-height: 80%;
       border-radius: 8px;
     }
   </style>
 </head>
 <body>
-  <video id="video" src="mari.mp4" autoplay playsinline controls></video>
+  <h1>Klepni pro přehrání videa</h1>
+  <button id="playBtn">Přehrát video</button>
+  <video id="video" src="mari.mp4" controls></video>
 
   <script>
+    const btn = document.getElementById('playBtn');
     const video = document.getElementById('video');
-    video.play().catch((error) => {
-      // Pokud autoplay selže, uživatel musí kliknout na video
-      console.log("Autoplay selhal, uživatel musí kliknout pro spuštění videa:", error);
+
+    btn.addEventListener('click', () => {
+      video.play();
+      btn.style.display = 'none'; // skryje tlačítko po spuštění
     });
   </script>
 </body>
